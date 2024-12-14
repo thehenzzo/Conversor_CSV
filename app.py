@@ -1,15 +1,16 @@
-from flask import Flask, request, render_template, send_file
+import streamlit as st
 import os
 import re
 import csv
 from io import StringIO
 
-app = Flask(__name__)
+# Pastas de upload e processamento
 UPLOAD_FOLDER = "uploads"
 PROCESSED_FOLDER = "processed"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(PROCESSED_FOLDER, exist_ok=True)
 
+# Função para processar o arquivo
 def process_list(file_content):
     csv_output = StringIO()
     csv_writer = csv.writer(csv_output)
@@ -34,30 +35,32 @@ def process_list(file_content):
     csv_output.seek(0)
     return csv_output
 
-@app.route("/", methods=["GET", "POST"])
-def index():
-    if request.method == "POST":
-        uploaded_file = request.files.get("file")
+# Interface principal do Streamlit
+st.title("Conversor de Lista para Mailing")
+st.write("Faça upload de um arquivo de texto para processar.")
 
-        if uploaded_file and uploaded_file.filename:
-            file_path = os.path.join(UPLOAD_FOLDER, uploaded_file.filename)
-            uploaded_file.save(file_path)
+# Upload do arquivo
+uploaded_file = st.file_uploader("Escolha um arquivo", type=["txt"])
 
-            with open(file_path, "r", encoding="utf-8") as file:
-                processed_content = process_list(file.read())
-
-            processed_path = os.path.join(PROCESSED_FOLDER, "mailing.csv")
-            with open(processed_path, "w", newline='') as processed_file:
-                processed_file.write(processed_content.getvalue())
-
-            return send_file(
-                processed_path,
-                as_attachment=True,
-                download_name="mailing.csv",
-                mimetype="text/csv",
-            )
-
-    return render_template("index.html")
-
-if __name__ == "__main__":
-    app.run(debug=True)
+if uploaded_file:
+    st.write(f"Arquivo carregado: {uploaded_file.name}")
+    
+    # Lê o conteúdo do arquivo
+    file_content = uploaded_file.getvalue().decode("utf-8")
+    
+    # Processa o conteúdo do arquivo
+    processed_content = process_list(file_content)
+    
+    # Salva o arquivo processado
+    processed_path = os.path.join(PROCESSED_FOLDER, "mailing.csv")
+    with open(processed_path, "w", newline='') as processed_file:
+        processed_file.write(processed_content.getvalue())
+    
+    # Disponibiliza o download do arquivo processado
+    st.success("Processamento concluído!")
+    st.download_button(
+        label="Baixar arquivo processado",
+        data=processed_content.getvalue(),
+        file_name="mailing.csv",
+        mime="text/csv",
+    )
