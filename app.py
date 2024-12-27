@@ -25,7 +25,7 @@ def process_list(file_content):
 
         for item in items:
             if phone_pattern.match(item) or item.isdigit():
-                phone = f"{item.strip('+')}"
+                phone = f"55{item.strip('+')}"
             else:
                 name.append(item)
 
